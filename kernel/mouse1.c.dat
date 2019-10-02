@@ -1,0 +1,112 @@
+#include "types.h"
+#include "x86.h"
+#include "defs.h"
+#include "spinlock.h"
+#include "traps.h"
+
+struct spinlock mouse_intr_lock;
+
+void poll_loop_write() {
+    uint counter = 0;
+    while (counter < 10000 || ((inb(0x64) & 0x02) == 1)) { counter++; } // run until bit is clear*/
+}
+
+void poll_loop_read() {
+    uint counter = 0;
+    while (counter < 10000 || ((inb(0x64) & 0x01) == 0)) { counter++; } // run until bit is clear*/
+}
+
+void mouseinit() {
+    cprintf("%s", "Helloya");
+    // BEFORE YOU WRITE, READ FROM PORT 64 AND VERIFY BIT 1 IS CLEAR
+    // BEFORE YOU READ, READ FROM PORT 64 AND VERIFY BIT 0 IS SET THEN READ FROM PORT 60
+    uint stb;
+
+    poll_loop_write();
+    outb(0x64, 0xa8);
+
+    poll_loop_write();
+    outb(0x64, 0x20); // send get compaq status byte to controller (port 64)
+
+    poll_loop_read();
+    stb = inb(0x60); // read in status byte from data port
+    cprintf("first: %d\n", stb);
+    stb |= 0x02; // set bit 1 to enable mouse interrupts
+    cprintf("second: %d\n", stb);
+    stb &= ~(1 << 5); // clear bit 5
+    cprintf("third: %d\n", stb);
+
+    poll_loop_write();
+    outb(0x64, 0x60); // send set compaq status byte
+
+/*    poll_loop_write();
+    outb(0x64, 0xD4);*/
+
+    poll_loop_write();
+    outb(0x60, stb); // send modified status byte
+
+    poll_loop_write();
+    outb(0x64, 0xD4);
+    poll_loop_write();
+    outb(0x60, 0xF6);
+    uchar ack;
+    //ack = inb(0x60);
+    do {
+    ack = inb(0x60);
+    }while (ack != 0xFA);
+
+    poll_loop_write();
+    outb(0x64, 0xD4);
+    poll_loop_write();
+    outb(0x60, 0xF4);
+
+    poll_loop_read();
+
+
+    do {
+    ack = inb(0x60);
+    }while (ack != 0xFA);
+    //initlock(&mouse_intr_lock, "mouselock");
+    ioapicenable(IRQ_MOUSE, 0);
+    cprintf("%s", "Hello");
+}
+
+void mouseintr() {
+    cprintf("%s", "Mouse interrupt");
+    /*uint st;*/
+    //acquire(&mouse_intr_lock);
+    //int counter = 0;
+    //while (counter < 10000) && ((inb(0x64) & 0x02) == 1)) { counter++; } // run until bit is clear
+    /*
+    if ((inb(0x64) & 0x02) == 1)
+        return;
+    //outb(0x64, 0xD4); // send  0xD4 to PS/2
+    //counter = 0;
+    //while (counter < 10000 && ((inb(0x64) & 0x02) == 1)) { counter++; } // run until bit is clear
+    if ((inb(0x64) & 0x01) == 1)
+        return;
+    //outb(0x60, 0xF4); // send 0xF4 command for mouse to 0x60
+    //counter = 0;
+    //while (counter < 10000 && ((inb(0x64) & 0x01) == 0)) { counter++; } // run until bit is set
+    if ((inb(0x64) & 0x01) == 0)
+        return;
+    st = inb(0x60); // read response from mouse
+    if (st != 0xFA) // check to see if response is 0xFA
+        return;*/
+
+    cprintf("%s", "Got mouse interrupt\n");
+    acquire(&mouse_intr_lock);
+    /*int stb;
+
+    if (((stb = inb(0x64)) & 1) == 1) {
+        int data = inb(0x60);
+        cprintf("%d\n", data);
+
+    }*/
+
+
+    release(&mouse_intr_lock);
+    cprintf("%s", "read response from mouse/n");
+    // need to read from data port 3 times for 3 bytes and check if first byte has 0x8 set
+    //release(&mouse_intr_lock);
+}
