@@ -2,9 +2,9 @@
 struct semaphore {
   unsigned int val;
   struct spinlock lock;
-  void * thread[NPROC];
-  unsigned int next;
-  unsigned int end;
+  // void * thread[NPROC];
+  // unsigned int next;
+  // unsigned int end;
 };
 
 void sem_init(struct semaphore *sp, int val);
