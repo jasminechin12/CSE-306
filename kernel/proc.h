@@ -52,8 +52,13 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int pendingsigs;            // Pending signals
+  int pending[100];            // Pending signals
+  int count;                   // num of pending signals
+  int read_index;              // index to pop
+  int write_index;             // index to push
   int maskedsigs;               // masked signals
+  struct spinlock siglock;
+  int signal_handlers[32];
 };
 
 // Process memory is laid out contiguously, low addresses first:

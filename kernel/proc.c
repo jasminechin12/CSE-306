@@ -63,6 +63,7 @@ myproc(void) {
   pushcli();
   c = mycpu();
   p = c->proc;
+  initlock(&(p->siglock), "siglock");
   popcli();
   return p;
 }
@@ -90,6 +91,13 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  for (int i = p->pending; i < &p->pending[100]; i++)
+    p->pending[i] = -1;
+  for (int j = p->signal_handlers; j < &p->signal_handlers[32]; j++)
+    p->signal_handlers[j] = 0;
+  p->count = 0;
+  p->read_index = 0;
+  p->wite_index = 0;
 
   release(&ptable.lock);
 
@@ -596,13 +604,67 @@ procdump(void)
   }
 }
 
+void insert_sig(int sig, struct proc *p) {
+    if (p->count == 100)
+      //cprintf("%s\n", "Buffer is full")
+      return;
+    p->pending[write_index++] = sig;
+    count++;
+    if (write_index == 100)
+      write_index = 0;
+}
+
+int remove_sig(struct proc *p) {
+    bool removed = false;
+    int signal;
+    if (p->count == 0)
+      // cprintf("%s\n", "Buffer is empty")
+      return -1;
+    while (!removed) {
+      signal = p->pending[read_index];
+      if (signal & p->maskedsigs == 0) { // check if masked
+        read_index++;
+        count--;
+        // removed = true;
+        break;
+      }
+      read_index++;
+      count--;
+      insert_sig(signal, p);
+    }
+    if (read_index == 100)
+      read_index = 0;
+    return signal;
+}
+
 int sigsend(int pid, int sig) {
+  if (pid < 0 || sig < 0 || sig > 31)
+    return -1;
   struct proc *p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if (p->pid == pid) {
-      p->pendingsigs |= sig;
+      acquire(&siglock);
+      insert_sig(sig, p);
+      if (p->state == SLEEPING)
+        p->state = RUNNABLE;
+      release(&siglock);
       return 0;
     }
   }
   return -1;
+}
+
+int sigsethandler(int sig, void (*hand)(int sig)) {
+  if (sig <= 0 || sig > 31)
+    return -1;
+  if(hand == (void*)-1) {
+    myproc()->sig_handlers[sig] = 0;
+    return 0;
+  }
+  if (hand == (void*)-2) {
+    myproc()->sig_handlers[sig] = -1;
+    return 0;
+  }
+  myproc()->sig_handlers[sig] = hand;
+  return 0;
 }

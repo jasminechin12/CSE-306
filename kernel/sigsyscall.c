@@ -8,8 +8,6 @@
 #include "spinlock.h"
 #include "proc.h"
 
-struct spinlock siglock;
-
 int sys_sigsend(void) {
     int pid, sig;
     argint(0, &pid);
@@ -18,9 +16,11 @@ int sys_sigsend(void) {
 }
 
 int sys_sigsethandler(void) {
-    int sig;
+    int sig, handler;
     argint(0, &sig);
-    // ??????
+    if (argptr(1, (void*)&handler, sizeof(*handler)) < 0)
+        return -1
+    return sigsethandler(sig, handler);
 }
 
 void sys_sigreturn(void) {
@@ -28,13 +28,18 @@ void sys_sigreturn(void) {
 }
 
 int sys_siggetmask(void) {
-    return siggetmask();
+    return myproc()->maskedsigs;
 }
 
 int sys_sigsetmask(void) {
     int *maskp;
-    argint(0, maskp);
-    return sigsetmask(maskp);
+    int temp;
+    if (argptr(0, (void*)&maskp, sizeof(*maskp)) < 0)
+        return -1;
+    temp = myproc()->maskedsigs;
+    myproc()->maskedsigs = *maskp;
+    *maskp = temp;
+    return 0;
 }
 
 int sys_sigpause(void) {
