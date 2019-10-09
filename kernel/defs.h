@@ -130,6 +130,15 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             sigsend(int pid, int sig);
+
+// sigsyscall.c
+int             sys_sigsend(void);
+int             sys_sigsethandler(void);
+void            sys_sigreturn(void);
+int             sys_siggetmask(void);
+int             sys_sigsetmask(void);
+int             sys_sigpause(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

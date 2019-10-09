@@ -19,6 +19,7 @@ OBJS = \
 	pipe.o\
 	proc.o\
 	semaphore.o\
+	sigsyscall.o\
 	sleeplock.o\
 	spinlock.o\
 	string.o\

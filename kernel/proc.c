@@ -40,10 +40,10 @@ struct cpu*
 mycpu(void)
 {
   int apicid, i;
-  
+
   if(readeflags()&FL_IF)
     panic("mycpu called with interrupts enabled\n");
-  
+
   apicid = lapicid();
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
@@ -126,7 +126,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-  
+
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -277,7 +277,7 @@ wait(void)
   struct proc *p;
   int havekids, pid;
   struct proc *curproc = myproc();
-  
+
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -357,7 +357,7 @@ sched(void)
   struct proc *p;
   struct context **oldcontext;
   struct cpu *c = mycpu();
-  
+
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
   if(c->ncli != 1)
@@ -481,7 +481,7 @@ void
 sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
-  
+
   if(p == 0)
     panic("sleep");
 
@@ -594,4 +594,15 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+
+int sigsend(int pid, int sig) {
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->pid == pid) {
+      p->pendingsigs |= sig;
+      return 0;
+    }
+  }
+  return -1;
 }

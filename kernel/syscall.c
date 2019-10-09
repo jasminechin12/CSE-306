@@ -104,6 +104,12 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_readmouse(void);
+extern int sys_sigsend(void);
+extern int sys_sigsethandler(void);
+extern void sys_sigreturn(void);
+extern int sys_siggetmask(void);
+extern int sys_sigsetmask(void);
+extern int sys_sigpause(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -128,6 +134,12 @@ static int (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_readmouse]  sys_readmouse,
+[SYS_sigsend] sys_sigsend,
+[SYS_sigsethandler] sys_sigsethandler,
+[SYS_sigreturn] sys_sigreturn,
+[SYS_siggetmask] sys_siggetmask,
+[SYS_sigsetmask] sys_sigsetmask,
+[SYS_sigpause] sys_sigpause,
 };
 
 void
