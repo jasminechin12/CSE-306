@@ -16,10 +16,11 @@ int sys_sigsend(void) {
 }
 
 int sys_sigsethandler(void) {
-    int sig, handler;
+    int sig;
+    void(*handler)(int sig);
     argint(0, &sig);
-    if (argptr(1, (void*)&handler, sizeof(*handler)) < 0)
-        return -1
+    if (argptr(1, (void*)&handler, sizeof(handler)) < 0)
+        return -1;
     return sigsethandler(sig, handler);
 }
 
@@ -45,5 +46,5 @@ int sys_sigsetmask(void) {
 int sys_sigpause(void) {
     int sig;
     argint(0, &sig);
-    return sigpause();
+    return sigpause(sig);
 }

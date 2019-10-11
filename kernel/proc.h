@@ -46,6 +46,7 @@ struct proc {
   int pid;                     // Process ID
   struct proc *parent;         // Parent process
   struct trapframe *tf;        // Trap frame for current syscall
+ // struct trapframe *backuptf
   struct context *context;     // swtch() here to run process
   void *chan;                  // If non-zero, sleeping on chan
   int killed;                  // If non-zero, have been killed
@@ -57,8 +58,8 @@ struct proc {
   int read_index;              // index to pop
   int write_index;             // index to push
   int maskedsigs;               // masked signals
-  struct spinlock siglock;
-  int signal_handlers[32];
+  // struct spinlock siglock;
+  void (*signal_handlers[32])(int x);
 };
 
 // Process memory is laid out contiguously, low addresses first:

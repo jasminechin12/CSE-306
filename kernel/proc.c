@@ -4,8 +4,8 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "x86.h"
-#include "proc.h"
 #include "spinlock.h"
+#include "proc.h"
 
 struct {
   struct spinlock lock;
@@ -63,7 +63,7 @@ myproc(void) {
   pushcli();
   c = mycpu();
   p = c->proc;
-  initlock(&(p->siglock), "siglock");
+  // initlock(&(p->siglock), "siglock");
   popcli();
   return p;
 }
@@ -91,13 +91,13 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  for (int i = p->pending; i < &p->pending[100]; i++)
+  for (int i = 0; i < 100; i++)
     p->pending[i] = -1;
-  for (int j = p->signal_handlers; j < &p->signal_handlers[32]; j++)
+  for (int j = 0; j < 32; j++)
     p->signal_handlers[j] = 0;
   p->count = 0;
   p->read_index = 0;
-  p->wite_index = 0;
+  p->write_index = 0;
 
   release(&ptable.lock);
 
@@ -608,63 +608,72 @@ void insert_sig(int sig, struct proc *p) {
     if (p->count == 100)
       //cprintf("%s\n", "Buffer is full")
       return;
-    p->pending[write_index++] = sig;
-    count++;
-    if (write_index == 100)
-      write_index = 0;
+    p->pending[p->write_index] = sig;
+    p->count++;
+    if (p->write_index == 100)
+      p->write_index = 0;
+    else
+      write_index++;
 }
 
 int remove_sig(struct proc *p) {
-    bool removed = false;
-    int signal;
+    int signal; int counter = 0;
     if (p->count == 0)
       // cprintf("%s\n", "Buffer is empty")
       return -1;
-    while (!removed) {
-      signal = p->pending[read_index];
-      if (signal & p->maskedsigs == 0) { // check if masked
-        read_index++;
-        count--;
-        // removed = true;
-        break;
+    for(int i = p->read_index; counter < 100; i = (i++)%100) {
+      signal = p->pending[i];
+      if ((signal & p->maskedsigs) == 0) { // check if masked
+        //p->read_index = i + 1;
+        p->count--;
+        counter++;
+      } else {
+          if(signal == 0)
+            myproc()->state == RUNNABLE;
+           // sigpause();  // need to call sigpause but don't know what to put in as parameter
+        p->count--;
+        counter++;
+        insert_sig(signal, p);
       }
-      read_index++;
-      count--;
-      insert_sig(signal, p);
     }
-    if (read_index == 100)
-      read_index = 0;
-    return signal;
+    if (i == 100)
+      p->read_index = 0;
+    else
+      p->read_index = i + 1;
+    return 0;
 }
 
 int sigsend(int pid, int sig) {
   if (pid < 0 || sig < 0 || sig > 31)
     return -1;
   struct proc *p;
+  acquire(&ptable.lock);
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if (p->pid == pid) {
-      acquire(&siglock);
       insert_sig(sig, p);
       if (p->state == SLEEPING)
         p->state = RUNNABLE;
-      release(&siglock);
+      release(&ptable.lock);
       return 0;
     }
   }
+  release(&ptable.lock);
   return -1;
 }
 
 int sigsethandler(int sig, void (*hand)(int sig)) {
   if (sig <= 0 || sig > 31)
     return -1;
-  if(hand == (void*)-1) {
-    myproc()->sig_handlers[sig] = 0;
-    return 0;
-  }
-  if (hand == (void*)-2) {
-    myproc()->sig_handlers[sig] = -1;
-    return 0;
-  }
-  myproc()->sig_handlers[sig] = hand;
+  // acquire(&myproc()->siglock);
+  // if(hand == (void*)-1) {
+  //   myproc()->signal_handlers[sig] = (void *)0;
+  //   return 0;
+  // }
+  // if (hand == (void*)-2) {
+  //   myproc()->signal_handlers[sig] = (void *)-1;
+  //   return 0;
+  // }
+  myproc()->signal_handlers[sig] = hand;
+  // release(&myproc()->siglock);
   return 0;
 }
