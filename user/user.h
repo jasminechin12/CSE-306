@@ -24,12 +24,6 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int readmouse(char *pkt);
-int sigsend(int pid, int sig);
-int sigsethandler(int sig, void (*hand)(int sig));
-void sigreturn(void);
-int siggetmask(void);
-int sigsetmask(int *maskp);
-int sigpause(int mask);
 
 // ulib.c
 int stat(char*, struct stat*);

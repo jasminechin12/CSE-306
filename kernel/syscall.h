@@ -21,9 +21,3 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_readmouse 22
-#define SYS_sigsend 23
-#define SYS_sigsethandler 24
-#define SYS_sigreturn 25
-#define SYS_siggetmask 26
-#define SYS_sigsetmask 27
-#define SYS_sigpause 28

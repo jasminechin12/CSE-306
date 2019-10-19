@@ -3,10 +3,10 @@
 #include "param.h"
 #include "memlayout.h"
 #include "mmu.h"
-#include "spinlock.h"
 #include "proc.h"
 #include "x86.h"
 #include "traps.h"
+#include "spinlock.h"
 
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
@@ -101,10 +101,6 @@ trap(struct trapframe *tf)
             myproc()->pid, myproc()->name, tf->trapno,
             tf->err, cpuid(), tf->eip, rcr2());
     myproc()->killed = 1;
-  }
-
-  if (myproc()->count != 0) {
-    remove_sig(myproc());
   }
 
   // Force process exit if it has been killed and is in user space.

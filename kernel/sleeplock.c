@@ -6,8 +6,8 @@
 #include "x86.h"
 #include "memlayout.h"
 #include "mmu.h"
-#include "spinlock.h"
 #include "proc.h"
+#include "spinlock.h"
 #include "sleeplock.h"
 
 void
@@ -45,7 +45,7 @@ int
 holdingsleep(struct sleeplock *lk)
 {
   int r;
-
+  
   acquire(&lk->lk);
   r = lk->locked;
   release(&lk->lk);
